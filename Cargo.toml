@@ -1,6 +1,6 @@
 [package]
 name = "ipc-channel"
-version = "0.13.0"
+version = "0.12.2"
 description = "A multiprocess drop-in replacement for Rust channels"
 authors = ["The Servo Project Developers"]
 license = "MIT/Apache-2.0"
@@ -15,7 +15,7 @@ async = ["futures-preview", "futures-test-preview"]
 
 [dependencies]
 bincode = "1"
-crossbeam-channel = "0.4"
+crossbeam-channel = "0.3"
 fnv = "1.0.3"
 futures-preview = { version = "0.3.0-alpha.17", optional = true }
 futures-test-preview = { version = "0.3.0-alpha.17", optional = true }

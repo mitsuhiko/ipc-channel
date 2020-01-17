@@ -36,6 +36,19 @@ thread_local! {
         RefCell::new(Vec::new())
 }
 
+#[derive(Debug)]
+pub enum IpcError {
+    Bincode(bincode::Error),
+    Io(Error),
+}
+
+#[derive(Debug)]
+pub enum TryRecvError {
+    IpcError(IpcError),
+    Empty,
+    Disconnected,
+}
+
 /// Create a connected [IpcSender] and [IpcReceiver] that
 /// transfer messages of a given type privided by type `T`
 /// or inferred by the types of messages sent by the sender.
@@ -200,10 +213,13 @@ impl<T> IpcReceiver<T> where T: for<'de> Deserialize<'de> + Serialize {
     }
 
     /// Non-blocking receive
-    pub fn try_recv(&self) -> Result<T, bincode::Error> {
+    pub fn try_recv(&self) -> Result<T, TryRecvError> {
         let (data, os_ipc_channels, os_ipc_shared_memory_regions) =
             self.os_receiver.try_recv()?;
-        OpaqueIpcMessage::new(data, os_ipc_channels, os_ipc_shared_memory_regions).to()
+        OpaqueIpcMessage::new(data, os_ipc_channels, os_ipc_shared_memory_regions)
+            .to()
+            .map_err(IpcError::Bincode)
+            .map_err(TryRecvError::IpcError)
     }
 
     /// Erase the type of the channel.
@@ -736,7 +752,7 @@ impl IpcBytesReceiver {
     }
 
     /// Non-blocking receive
-    pub fn try_recv(&self) -> Result<Vec<u8>, bincode::Error> {
+    pub fn try_recv(&self) -> Result<Vec<u8>, TryRecvError> {
         match self.os_receiver.try_recv() {
             Ok((data, _, _)) => Ok(data),
             Err(err) => Err(err.into()),
